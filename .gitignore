@@ -1,0 +1,10 @@
+# .NET
+[Dd]ebug/
+[Rr]elease/
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.log
+.vs/
