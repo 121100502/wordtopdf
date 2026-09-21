@@ -27,6 +27,29 @@ public class BoolInverseConverter : IValueConverter
 
 #endregion
 
+#region 百分比转宽度（多值：[0]=总宽度, [1]=百分比）
+
+public class PercentToWidthConverter : IMultiValueConverter
+{
+    public static readonly PercentToWidthConverter Instance = new();
+
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length >= 2 && values[0] is double totalWidth && totalWidth > 0 && values[1] is double percent)
+        {
+            return Math.Max(0, Math.Min(totalWidth, totalWidth * percent / 100.0));
+        }
+        return 0.0;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+#endregion
+
 #region 布尔转可见性
 
 public class BoolToVisibilityConverter : IValueConverter

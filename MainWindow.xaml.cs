@@ -12,6 +12,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += (s, e) =>
+        {
+            // 延迟显示 Growl，避免初始化时空白气泡闪烁
+            WindowGrowl.Visibility = Visibility.Visible;
+        };
     }
 
     private MainViewModel VM => (MainViewModel)DataContext;
@@ -57,5 +62,10 @@ public partial class MainWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void OutputDir_Click(object sender, MouseButtonEventArgs e)
+    {
+        VM.SelectOutputFolderCommand.Execute(null);
     }
 }

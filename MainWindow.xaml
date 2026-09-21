@@ -7,6 +7,7 @@
         xmlns:vm="clr-namespace:WordToPdfApp.ViewModels"
         xmlns:helpers="clr-namespace:WordToPdfApp.Helpers"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:local="clr-namespace:WordToPdfApp"
         mc:Ignorable="d"
         Title="Word 转 PDF 批量工具"
         Height="720"
@@ -114,15 +115,26 @@
                 <!-- ========== 左栏：拖拽区 ========== -->
                 <Grid Grid.Column="0" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource CardContainerStyle}"
-                            Padding="20"
-                            CornerRadius="24">
-                        <Grid>
-                            <!-- 虚线边框 -->
-                            <Border x:Name="DragDropBorder"
-                                    BorderBrush="{StaticResource PrimaryBrush}"
-                                    BorderThickness="2"
-                                    CornerRadius="20"
+                            Padding="0"
+                            CornerRadius="24"
+                            Background="Transparent">
+                        <Grid Margin="8">
+                            <!-- 背景层 -->
+                            <Border x:Name="DragBg"
                                     Background="{StaticResource PrimaryLighterBrush}"
+                                    CornerRadius="20" />
+                            <!-- 虚线边框层 -->
+                            <Rectangle Stroke="{StaticResource PrimaryBrush}"
+                                       StrokeThickness="2"
+                                       StrokeDashArray="8,5"
+                                       RadiusX="20"
+                                       RadiusY="20"
+                                       IsHitTestVisible="False"
+                                       SnapsToDevicePixels="True" />
+                            <!-- 内容层（接收拖拽） -->
+                            <Border x:Name="DragDropBorder"
+                                    Background="Transparent"
+                                    CornerRadius="20"
                                     AllowDrop="True"
                                     Drop="DragZone_Drop"
                                     DragEnter="DragZone_DragEnter"
@@ -200,7 +212,8 @@
                                               IsChecked="{Binding IsAllSelected}"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Center"
-                                              Cursor="Hand" />
+                                              Cursor="Hand"
+                                              Style="{StaticResource FigmaCheckBoxStyle}" />
                                     <TextBlock Grid.Column="1"
                                                Text="文件名"
                                                FontWeight="SemiBold"
@@ -243,9 +256,9 @@
                                     <DataTemplate>
                                         <Grid Height="44" VerticalAlignment="Center">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="48" />
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="100" />
                                                 <ColumnDefinition Width="80" />
                                                 <ColumnDefinition Width="80" />
                                             </Grid.ColumnDefinitions>
@@ -255,7 +268,8 @@
                                                       IsChecked="{Binding IsSelected}"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Center"
-                                                      Cursor="Hand" />
+                                                      Cursor="Hand"
+                                                      Style="{StaticResource FigmaCheckBoxStyle}" />
 
                                             <!-- 文件名 -->
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -268,14 +282,9 @@
                                             </StackPanel>
 
                                             <!-- 状态标签 -->
-                                            <Border Grid.Column="2"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Padding="10,4"
-                                                    CornerRadius="6">
+                                            <Border Grid.Column="2">
                                                 <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="{StaticResource WarningLightBrush}" />
+                                                    <Style TargetType="Border" BasedOn="{StaticResource StatusTagStyle}">
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Status}" Value="Success">
                                                                 <Setter Property="Background" Value="{StaticResource SuccessLightBrush}" />
@@ -292,11 +301,9 @@
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Border.Style>
-                                                <TextBlock FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center">
+                                                <TextBlock>
                                                     <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Text" Value="待转换" />
-                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StatusTagTextStyle}">
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Status}" Value="Success">
                                                                     <Setter Property="Text" Value="成功" />
@@ -436,22 +443,21 @@
                                                VerticalAlignment="Center" />
                                 </Grid>
 
-                                <!-- 进度条 -->
-                                <Border Grid.Row="1"
-                                        CornerRadius="{StaticResource PillCornerRadius}"
-                                        Height="12"
-                                        Background="{StaticResource DividerBrush}"
-                                        ClipToBounds="True">
-                                    <ProgressBar Value="{Binding TotalProgress}"
-                                                 Maximum="100"
-                                                 Minimum="0"
-                                                 Height="12"
-                                                 BorderThickness="0"
-                                                 Background="Transparent"
-                                                 Foreground="{StaticResource PrimaryBrush}"
-                                                 Padding="0"
-                                                 Margin="0" />
-                                </Border>
+                                <!-- 进度条（纯自定义，绕开 HandyControl 样式） -->
+                                <Grid x:Name="ProgressTrack" Grid.Row="1" Height="16">
+                                    <Border Background="{StaticResource DividerBrush}"
+                                            CornerRadius="8" />
+                                    <Border HorizontalAlignment="Left"
+                                            CornerRadius="8"
+                                            Background="{StaticResource PrimaryGradientBrush}">
+                                        <Border.Width>
+                                            <MultiBinding Converter="{x:Static local:PercentToWidthConverter.Instance}">
+                                                <Binding ElementName="ProgressTrack" Path="ActualWidth" />
+                                                <Binding Path="TotalProgress" />
+                                            </MultiBinding>
+                                        </Border.Width>
+                                    </Border>
+                                </Grid>
                             </Grid>
                         </Grid>
                     </Border>
@@ -479,16 +485,31 @@
                                            VerticalAlignment="Center" />
                             </Grid>
 
-                            <!-- 输出目录值 -->
+                            <!-- 输出目录值（点击可选择） -->
                             <Border Background="{StaticResource PrimaryLighterBrush}"
                                     CornerRadius="12"
                                     Padding="16,12"
-                                    Margin="0,0,0,20">
-                                <TextBlock Text="{Binding OutputDirectory, StringFormat='原目录 / {0} 文件夹'}"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
-                                           FontSize="14"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding OutputDirectory}" />
+                                    Margin="0,0,0,20"
+                                    Cursor="Hand"
+                                    MouseLeftButtonDown="OutputDir_Click">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding OutputDirectoryDisplay}"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               FontSize="14"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding OutputDirectoryDisplay}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="📁"
+                                               FontSize="14"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center" />
+                                </Grid>
                             </Border>
 
                             <!-- 递归子文件夹开关 -->
@@ -504,34 +525,7 @@
                                 <ToggleButton Grid.Column="1"
                                               x:Name="ToggleRecursive"
                                               IsChecked="{Binding IsRecursive}"
-                                              Width="48"
-                                              Height="26"
-                                              Cursor="Hand">
-                                    <ToggleButton.Template>
-                                        <ControlTemplate TargetType="ToggleButton">
-                                            <Border x:Name="bg"
-                                                    Background="{StaticResource DividerBrush}"
-                                                    CornerRadius="13"
-                                                    Width="48"
-                                                    Height="26">
-                                                <Ellipse x:Name="circle"
-                                                         Fill="White"
-                                                         Width="20"
-                                                         Height="20"
-                                                         HorizontalAlignment="Left"
-                                                         Margin="3,0,0,0"
-                                                         Effect="{StaticResource CardShadowEffect}" />
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsChecked" Value="True">
-                                                    <Setter TargetName="bg" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                                    <Setter TargetName="circle" Property="HorizontalAlignment" Value="Right" />
-                                                    <Setter TargetName="circle" Property="Margin" Value="0,0,3,0" />
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </ToggleButton.Template>
-                                </ToggleButton>
+                                              Style="{StaticResource FigmaToggleSwitchStyle}" />
                             </Grid>
 
                             <!-- 保留来源文件名开关 -->
@@ -547,24 +541,33 @@
                                 <ToggleButton Grid.Column="1"
                                               x:Name="ToggleKeepName"
                                               IsChecked="{Binding KeepSourceFileName}"
-                                              Width="48"
-                                              Height="26"
-                                              Cursor="Hand"
-                                              Template="{Binding Template, ElementName=ToggleRecursive}" />
+                                              Style="{StaticResource FigmaToggleSwitchStyle}" />
                             </Grid>
 
                             <!-- 分隔线 -->
                             <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,0,0,20" />
 
                             <!-- 开始转换按钮 -->
-                            <Button Content="开始转换"
-                                    Style="{StaticResource PrimaryButtonStyle}"
+                            <Button Style="{StaticResource PrimaryButtonStyle}"
                                     Command="{Binding StartConvertCommand}"
                                     IsEnabled="{Binding CanConvert}"
                                     FontSize="16"
                                     FontWeight="Bold"
                                     Height="56"
-                                    Margin="0,0,0,12" />
+                                    Margin="0,0,0,12">
+                                <TextBlock VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="开始转换" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsConverting}" Value="True">
+                                                    <Setter Property="Text" Value="转换中..." />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
 
                             <!-- 隐私提示 -->
                             <StackPanel Orientation="Horizontal"
@@ -581,6 +584,17 @@
                 </Grid>
 
             </Grid>
+
+            <!-- 窗口内通知气泡 -->
+            <hc:Growl x:Name="WindowGrowl"
+                      Token="MainWindowGrowl"
+                      Grid.RowSpan="2"
+                      VerticalAlignment="Top"
+                      Margin="0,72,0,0"
+                      HorizontalAlignment="Center"
+                      Panel.ZIndex="999"
+                      ShowDateTime="False"
+                      Visibility="Collapsed" />
         </Grid>
     </Border>
 </Window>

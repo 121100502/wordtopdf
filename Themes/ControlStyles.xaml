@@ -212,19 +212,79 @@
         </Setter>
     </Style>
 
-    <!-- ==================== 复选框样式 ==================== -->
+    <!-- ==================== 复选框样式（胶囊风） ==================== -->
     <Style x:Key="FigmaCheckBoxStyle" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Padding" Value="8,0,0,0" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid x:Name="templateRoot" Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="checkBoxBorder"
+                                Width="20"
+                                Height="20"
+                                CornerRadius="6"
+                                Background="{StaticResource WhiteBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1.5"
+                                VerticalAlignment="Center"
+                                SnapsToDevicePixels="True">
+                            <Grid x:Name="markGrid" Opacity="0">
+                                <Path x:Name="optionMark"
+                                      Data="M 4 10 L 8 14 L 15 6"
+                                      Stroke="{StaticResource WhiteBrush}"
+                                      StrokeThickness="2"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Stretch="Fill"
+                                      Margin="3"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ContentPresenter x:Name="contentPresenter"
+                                          Grid.Column="1"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          Focusable="False"
+                                          RecognizesAccessKey="True" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasContent" Value="true">
+                            <Setter Property="Margin" Value="4,0,0,0" TargetName="contentPresenter" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="true">
+                            <Setter TargetName="checkBoxBorder" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                            <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            <Setter TargetName="markGrid" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter TargetName="checkBoxBorder" Property="Background" Value="{StaticResource DisableBgBrush}" />
+                            <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ==================== 进度条样式（胶囊） ==================== -->
     <Style x:Key="FigmaProgressBarStyle" TargetType="ProgressBar">
-        <Setter Property="Height" Value="12" />
+        <Setter Property="Height" Value="16" />
         <Setter Property="Foreground" Value="{StaticResource PrimaryGradientBrush}" />
         <Setter Property="Background" Value="{StaticResource DividerBrush}" />
         <Setter Property="BorderThickness" Value="0" />
@@ -249,6 +309,70 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- ==================== Toggle 开关样式 ==================== -->
+    <Style x:Key="FigmaToggleSwitchStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="48" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="bg"
+                            Background="{StaticResource BorderBrush}"
+                            CornerRadius="13"
+                            Width="48"
+                            Height="26"
+                            SnapsToDevicePixels="True">
+                        <Ellipse x:Name="circle"
+                                 Fill="White"
+                                 Width="20"
+                                 Height="20"
+                                 HorizontalAlignment="Left"
+                                 Margin="3,0,0,0"
+                                 Effect="{StaticResource CardShadowEffect}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="{StaticResource BorderHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                            <Setter TargetName="circle" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="circle" Property="Margin" Value="0,0,3,0" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bg" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== 状态标签样式（胶囊） ==================== -->
+    <Style x:Key="StatusTagStyle" TargetType="Border">
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Background" Value="{StaticResource WarningLightBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="StatusTagTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+        <Setter Property="Text" Value="待转换" />
     </Style>
 
     <!-- ==================== 列表项样式 ==================== -->
@@ -294,5 +418,13 @@
         <Setter Property="CornerRadius" Value="{StaticResource CardCornerRadius}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
+
+    <!-- ==================== 拖拽虚线背景 ==================== -->
+    <LinearGradientBrush x:Key="DashedBorderBackground" StartPoint="0,0" EndPoint="1,0" SpreadMethod="Repeat">
+        <GradientStop Color="#FF5B6DFF" Offset="0" />
+        <GradientStop Color="#FF5B6DFF" Offset="0.5" />
+        <GradientStop Color="Transparent" Offset="0.5" />
+        <GradientStop Color="Transparent" Offset="1" />
+    </LinearGradientBrush>
 
 </ResourceDictionary>

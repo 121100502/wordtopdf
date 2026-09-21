@@ -28,6 +28,13 @@ public partial class MainViewModel : ObservableObject
         Settings = new ConvertSettings();
         _logger.Info("轻文 · Word 批量转 PDF 工具已启动");
         _logger.Info("纯本地离线转换，文件不会上传到任何服务器");
+
+        // 列表变化时通知相关属性刷新
+        FileList.CollectionChanged += (s, e) =>
+        {
+            OnPropertyChanged(nameof(CanConvert));
+            OnPropertyChanged(nameof(IsAllSelected));
+        };
     }
 
     #region 属性
@@ -63,6 +70,50 @@ public partial class MainViewModel : ObservableObject
     }
 
     public ObservableCollection<string> Logs => _logger.Logs;
+
+    /// <summary>
+    /// 是否递归子文件夹（UI 绑定用）
+    /// </summary>
+    public bool IsRecursive
+    {
+        get => Settings.RecursiveSubfolders;
+        set
+        {
+            Settings.RecursiveSubfolders = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// 是否保留原文件名（UI 绑定用）
+    /// </summary>
+    public bool KeepSourceFileName
+    {
+        get => Settings.OverwriteExisting;
+        set
+        {
+            Settings.OverwriteExisting = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// 输出目录显示文本
+    /// </summary>
+    public string OutputDirectoryDisplay
+    {
+        get
+        {
+            if (Settings.OutputToSource || string.IsNullOrEmpty(Settings.OutputDirectory))
+                return "原目录 / pdf 文件夹";
+            return Settings.OutputDirectory;
+        }
+    }
+
+    /// <summary>
+    /// 是否可转换
+    /// </summary>
+    public bool CanConvert => !IsConverting && FileList.Count > 0;
 
     #endregion
 
@@ -122,6 +173,7 @@ public partial class MainViewModel : ObservableObject
             {
                 Settings.OutputToSource = false;
             }
+            OnPropertyChanged(nameof(OutputDirectoryDisplay));
         }
     }
 
@@ -196,7 +248,7 @@ public partial class MainViewModel : ObservableObject
         if (FileList.Count == 0)
         {
             _logger.Warning("请先添加 Word 文件");
-            HandyControl.Controls.Growl.WarningGlobal("请先添加 Word 文件，再开始转换。");
+            HandyControl.Controls.Growl.Warning("请先添加 Word 文件，再开始转换。", "MainWindowGrowl");
             return;
         }
 
@@ -204,7 +256,7 @@ public partial class MainViewModel : ObservableObject
         if (selectedFiles.Count == 0)
         {
             _logger.Warning("没有选中任何文件");
-            HandyControl.Controls.Growl.WarningGlobal("请至少勾选一个文件再开始转换。");
+            HandyControl.Controls.Growl.Warning("请至少勾选一个文件再开始转换。", "MainWindowGrowl");
             return;
         }
 
@@ -212,7 +264,7 @@ public partial class MainViewModel : ObservableObject
         if (pendingFiles.Count == 0)
         {
             _logger.Warning("所选文件中没有待转换的文件");
-            HandyControl.Controls.Growl.InfoGlobal("所选文件都已转换完成。");
+            HandyControl.Controls.Growl.Info("所选文件都已转换完成。", "MainWindowGrowl");
             return;
         }
 
@@ -220,10 +272,12 @@ public partial class MainViewModel : ObservableObject
         if (!Settings.OutputToSource && string.IsNullOrEmpty(Settings.OutputDirectory))
         {
             _logger.Error("请先设置输出目录");
+            HandyControl.Controls.Growl.Warning("请先设置输出目录。", "MainWindowGrowl");
             return;
         }
 
         IsConverting = true;
+        OnPropertyChanged(nameof(CanConvert));
         _cts = new CancellationTokenSource();
 
         try
@@ -253,10 +307,19 @@ public partial class MainViewModel : ObservableObject
             if (_cts.IsCancellationRequested)
             {
                 _logger.Warning("转换已取消");
+                HandyControl.Controls.Growl.Info("转换已取消。", "MainWindowGrowl");
             }
             else
             {
                 _logger.Success($"批量转换完成：成功 {SuccessCount}，失败 {FailedCount}");
+                if (FailedCount == 0)
+                {
+                    HandyControl.Controls.Growl.Success($"全部转换完成！成功 {SuccessCount} 个文件。", "MainWindowGrowl");
+                }
+                else
+                {
+                    HandyControl.Controls.Growl.Warning($"转换完成：成功 {SuccessCount} 个，失败 {FailedCount} 个。", "MainWindowGrowl");
+                }
                 // 打开输出目录
                 if (Settings.OpenFolderWhenDone && SuccessCount > 0)
                 {
@@ -267,10 +330,12 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.Error($"批量转换异常：{ex.Message}");
+            HandyControl.Controls.Growl.Error($"转换异常：{ex.Message}", "MainWindowGrowl");
         }
         finally
         {
             IsConverting = false;
+            OnPropertyChanged(nameof(CanConvert));
             _cts?.Dispose();
             _cts = null;
         }
