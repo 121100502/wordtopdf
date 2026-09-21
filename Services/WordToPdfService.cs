@@ -66,40 +66,28 @@ public class WordToPdfService
 
             progress?.Report(10);
 
-            // 在后台线程执行，避免阻塞 UI
-            await Task.Run(() =>
+            // 使用 STA 线程执行 PDF 渲染（Syncfusion 渲染引擎需要 STA 线程）
+            var tcs = new TaskCompletionSource<string>();
+            var thread = new Thread(() =>
             {
                 try
                 {
-                    // 打开 Word 文档
-                    using var stream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var document = new WordDocument(stream, GetFormat(item.Format));
-
-                    progress?.Report(40);
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // 转换为 PDF
-                    using var renderer = new DocIORenderer();
-                    using var pdfDocument = renderer.ConvertToPDF(document);
-
-                    progress?.Report(80);
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // 保存 PDF
-                    using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
-                    pdfDocument.Save(outputStream);
-
-                    progress?.Report(100);
+                    var resultPath = ConvertWordToPdfInternal(sourcePath, outputPath, item.Format, progress, cancellationToken);
+                    tcs.SetResult(resultPath);
                 }
                 catch (OperationCanceledException)
                 {
-                    throw;
+                    tcs.SetCanceled(cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"转换异常：{ex.Message}", ex);
+                    tcs.SetException(new InvalidOperationException($"转换异常：{ex.Message}", ex));
                 }
-            }, cancellationToken);
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+            await tcs.Task;
 
             item.Status = ConvertStatus.Success;
             item.Progress = 100;
@@ -132,6 +120,41 @@ public class WordToPdfService
         // 原目录下创建 PDF 文件夹
         var sourceDir = Path.GetDirectoryName(sourcePath) ?? string.Empty;
         return Path.Combine(sourceDir, "PDF输出");
+    }
+
+    /// <summary>
+    /// 内部转换方法（运行在 STA 线程）
+    /// Syncfusion 的 PDF 渲染引擎需要在 STA 单线程单元中运行
+    /// </summary>
+    private string ConvertWordToPdfInternal(string sourcePath, string outputPath, string format, IProgress<double>? progress, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // 打开 Word 文档
+            using var stream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var document = new WordDocument(stream, GetFormat(format));
+
+            progress?.Report(40);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // 转换为 PDF
+            using var renderer = new DocIORenderer();
+            using var pdfDocument = renderer.ConvertToPDF(document);
+
+            progress?.Report(80);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // 保存 PDF
+            using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+            pdfDocument.Save(outputStream);
+
+            progress?.Report(100);
+            return outputPath;
+        }
+        catch (AccessViolationException ex)
+        {
+            throw new InvalidOperationException($"PDF 渲染引擎崩溃：{ex.Message}。可能是许可证无效或文件格式不支持。", ex);
+        }
     }
 
     /// <summary>

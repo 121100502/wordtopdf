@@ -55,6 +55,37 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private int _failedCount;
 
+    #region 自定义通知
+
+    [ObservableProperty] private string _notifyMessage = "";
+
+    [ObservableProperty] private string _notifyType = "Info"; // Info / Success / Warning / Error
+
+    [ObservableProperty] private bool _notifyIsVisible;
+
+    private System.Timers.Timer? _notifyTimer;
+
+    /// <summary>
+    /// 显示通知
+    /// </summary>
+    private void ShowNotify(string message, string type = "Info", int durationMs = 2500)
+    {
+        NotifyMessage = message;
+        NotifyType = type;
+        NotifyIsVisible = true;
+
+        _notifyTimer?.Stop();
+        _notifyTimer = new System.Timers.Timer(durationMs);
+        _notifyTimer.AutoReset = false;
+        _notifyTimer.Elapsed += (s, e) =>
+        {
+            App.Current.Dispatcher.Invoke(() => NotifyIsVisible = false);
+        };
+        _notifyTimer.Start();
+    }
+
+    #endregion
+
     /// <summary>
     /// 是否全选（双向：勾选全选会影响所有项；项变化也会反向影响全选状态）
     /// </summary>
@@ -248,7 +279,7 @@ public partial class MainViewModel : ObservableObject
         if (FileList.Count == 0)
         {
             _logger.Warning("请先添加 Word 文件");
-            HandyControl.Controls.Growl.Warning("请先添加 Word 文件，再开始转换。", "MainWindowGrowl");
+            ShowNotify("请先添加 Word 文件，再开始转换。", "Warning");
             return;
         }
 
@@ -256,7 +287,7 @@ public partial class MainViewModel : ObservableObject
         if (selectedFiles.Count == 0)
         {
             _logger.Warning("没有选中任何文件");
-            HandyControl.Controls.Growl.Warning("请至少勾选一个文件再开始转换。", "MainWindowGrowl");
+            ShowNotify("请至少勾选一个文件再开始转换。", "Warning");
             return;
         }
 
@@ -264,7 +295,7 @@ public partial class MainViewModel : ObservableObject
         if (pendingFiles.Count == 0)
         {
             _logger.Warning("所选文件中没有待转换的文件");
-            HandyControl.Controls.Growl.Info("所选文件都已转换完成。", "MainWindowGrowl");
+            ShowNotify("所选文件都已转换完成。", "Info");
             return;
         }
 
@@ -272,7 +303,7 @@ public partial class MainViewModel : ObservableObject
         if (!Settings.OutputToSource && string.IsNullOrEmpty(Settings.OutputDirectory))
         {
             _logger.Error("请先设置输出目录");
-            HandyControl.Controls.Growl.Warning("请先设置输出目录。", "MainWindowGrowl");
+            ShowNotify("请先设置输出目录。", "Warning");
             return;
         }
 
@@ -307,18 +338,18 @@ public partial class MainViewModel : ObservableObject
             if (_cts.IsCancellationRequested)
             {
                 _logger.Warning("转换已取消");
-                HandyControl.Controls.Growl.Info("转换已取消。", "MainWindowGrowl");
+                ShowNotify("转换已取消。", "Info");
             }
             else
             {
                 _logger.Success($"批量转换完成：成功 {SuccessCount}，失败 {FailedCount}");
                 if (FailedCount == 0)
                 {
-                    HandyControl.Controls.Growl.Success($"全部转换完成！成功 {SuccessCount} 个文件。", "MainWindowGrowl");
+                    ShowNotify($"全部转换完成！成功 {SuccessCount} 个文件。", "Success");
                 }
                 else
                 {
-                    HandyControl.Controls.Growl.Warning($"转换完成：成功 {SuccessCount} 个，失败 {FailedCount} 个。", "MainWindowGrowl");
+                    ShowNotify($"转换完成：成功 {SuccessCount} 个，失败 {FailedCount} 个。", "Warning");
                 }
                 // 打开输出目录
                 if (Settings.OpenFolderWhenDone && SuccessCount > 0)
@@ -330,7 +361,7 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.Error($"批量转换异常：{ex.Message}");
-            HandyControl.Controls.Growl.Error($"转换异常：{ex.Message}", "MainWindowGrowl");
+            ShowNotify($"转换异常：{ex.Message}", "Error");
         }
         finally
         {

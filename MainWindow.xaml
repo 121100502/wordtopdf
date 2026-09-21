@@ -585,16 +585,62 @@
 
             </Grid>
 
-            <!-- 窗口内通知气泡 -->
-            <hc:Growl x:Name="WindowGrowl"
-                      Token="MainWindowGrowl"
-                      Grid.RowSpan="2"
-                      VerticalAlignment="Top"
-                      Margin="0,72,0,0"
-                      HorizontalAlignment="Center"
-                      Panel.ZIndex="999"
-                      ShowDateTime="False"
-                      Visibility="Collapsed" />
+            <!-- 自定义通知气泡 -->
+            <Border x:Name="NotifyBar"
+                    Grid.RowSpan="2"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Center"
+                    Margin="0,72,0,0"
+                    Padding="20,12"
+                    CornerRadius="12"
+                    Background="White"
+                    Effect="{StaticResource CardShadowEffect}"
+                    Visibility="Collapsed"
+                    Panel.ZIndex="999">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding NotifyIsVisible}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Ellipse Grid.Column="0"
+                             x:Name="NotifyDot"
+                             Width="10"
+                             Height="10"
+                             VerticalAlignment="Center"
+                             Margin="0,0,12,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource PrimaryBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding NotifyType}" Value="Success">
+                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding NotifyType}" Value="Warning">
+                                        <Setter Property="Fill" Value="{StaticResource WarningBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding NotifyType}" Value="Error">
+                                        <Setter Property="Fill" Value="{StaticResource ErrorBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding NotifyMessage}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="14"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </Border>
         </Grid>
     </Border>
 </Window>
