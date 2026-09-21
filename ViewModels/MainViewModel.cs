@@ -48,6 +48,20 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private int _failedCount;
 
+    /// <summary>
+    /// 是否全选（双向：勾选全选会影响所有项；项变化也会反向影响全选状态）
+    /// </summary>
+    public bool IsAllSelected
+    {
+        get => FileList.Count > 0 && FileList.All(f => f.IsSelected);
+        set
+        {
+            foreach (var item in FileList)
+                item.IsSelected = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ObservableCollection<string> Logs => _logger.Logs;
 
     #endregion
@@ -122,8 +136,10 @@ public partial class MainViewModel : ObservableObject
     private void RemoveFile(FileItem? item)
     {
         if (item == null) return;
+        item.PropertyChanged -= OnFileItemPropertyChanged;
         FileList.Remove(item);
         UpdateStats();
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     /// <summary>
@@ -133,8 +149,13 @@ public partial class MainViewModel : ObservableObject
     private void ClearList()
     {
         if (FileList.Count == 0) return;
+        foreach (var item in FileList)
+        {
+            item.PropertyChanged -= OnFileItemPropertyChanged;
+        }
         FileList.Clear();
         UpdateStats();
+        OnPropertyChanged(nameof(IsAllSelected));
         _logger.Info("已清空文件列表");
     }
 
@@ -172,10 +193,26 @@ public partial class MainViewModel : ObservableObject
     {
         if (IsConverting) return;
 
-        var pendingFiles = FileList.Where(x => x.Status == ConvertStatus.Pending).ToList();
+        if (FileList.Count == 0)
+        {
+            _logger.Warning("请先添加 Word 文件");
+            HandyControl.Controls.Growl.WarningGlobal("请先添加 Word 文件，再开始转换。");
+            return;
+        }
+
+        var selectedFiles = FileList.Where(x => x.IsSelected).ToList();
+        if (selectedFiles.Count == 0)
+        {
+            _logger.Warning("没有选中任何文件");
+            HandyControl.Controls.Growl.WarningGlobal("请至少勾选一个文件再开始转换。");
+            return;
+        }
+
+        var pendingFiles = selectedFiles.Where(x => x.Status == ConvertStatus.Pending).ToList();
         if (pendingFiles.Count == 0)
         {
-            _logger.Warning("没有待转换的文件");
+            _logger.Warning("所选文件中没有待转换的文件");
+            HandyControl.Controls.Growl.InfoGlobal("所选文件都已转换完成。");
             return;
         }
 
@@ -296,8 +333,10 @@ public partial class MainViewModel : ObservableObject
                 FilePath = path,
                 Format = ext.TrimStart('.'),
                 FileSize = fileInfo.Length,
-                Status = ConvertStatus.Pending
+                Status = ConvertStatus.Pending,
+                IsSelected = true
             };
+            item.PropertyChanged += OnFileItemPropertyChanged;
             FileList.Add(item);
             added++;
         }
@@ -310,6 +349,15 @@ public partial class MainViewModel : ObservableObject
             _logger.Info("没有找到支持的 Word 文件");
         }
         UpdateStats();
+        OnPropertyChanged(nameof(IsAllSelected));
+    }
+
+    private void OnFileItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(FileItem.IsSelected))
+        {
+            OnPropertyChanged(nameof(IsAllSelected));
+        }
     }
 
     private void ScanFolder(string folderPath)

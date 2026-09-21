@@ -42,8 +42,10 @@ public partial class FileItem : ObservableObject
 
     [ObservableProperty] private double _progress;
 
+    [ObservableProperty] private bool _isSelected;
+
     /// <summary>文件大小展示文本</summary>
-    public string FileSizeText => FormatFileSize(FileSize);
+    public string SizeDisplay => FormatFileSize(FileSize);
 
     /// <summary>状态显示文本</summary>
     public string StatusText => Status switch
